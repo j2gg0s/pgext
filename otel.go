@@ -133,14 +133,18 @@ func (h OpenTelemetryHook) AfterQuery(ctx context.Context, evt *pg.QueryEvent) e
 			label.String("db.user", opt.User),
 			label.String("db.name", opt.Database),
 		)
-		metricLabels = append(metricLabels, instanceKey.String(opt.Database))
+		if len(opt.Database) > 0 {
+			metricLabels = append(metricLabels, instanceKey.String(opt.Database))
+		}
 	}
 
 	if len(evt.Params) > 0 {
 		if tableModel, ok := evt.Params[0].(orm.TableModel); ok {
-			metricLabels = append(
-				metricLabels,
-				tableKey.String(tableModel.Table().ModelName))
+			if len(tableModel.Table().ModelName) > 0 {
+				metricLabels = append(
+					metricLabels,
+					tableKey.String(tableModel.Table().ModelName))
+			}
 		}
 	}
 
