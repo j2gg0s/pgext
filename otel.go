@@ -59,16 +59,21 @@ func (h OpenTelemetryHook) AfterQuery(ctx context.Context, evt *pg.QueryEvent) e
 		// fastpath
 		return nil
 	}
-	defer span.End()
+
+	if span.IsRecording() {
+		defer span.End()
+	}
 
 	metricLabels := make([]label.KeyValue, 0, 4)
-	defer func() {
-		latencyValueRecorder.Record(
-			ctx,
-			time.Since(evt.StartTime).Microseconds(),
-			metricLabels...,
-		)
-	}()
+	if h.AllowMetric {
+		defer func() {
+			latencyValueRecorder.Record(
+				ctx,
+				time.Since(evt.StartTime).Microseconds(),
+				metricLabels...,
+			)
+		}()
+	}
 
 	var operation orm.QueryOp
 
@@ -92,7 +97,9 @@ func (h OpenTelemetryHook) AfterQuery(ctx context.Context, evt *pg.QueryEvent) e
 	}
 
 	if operation != "" {
-		span.SetName(string(operation))
+		if span.IsRecording() {
+			span.SetName(string(operation))
+		}
 		metricLabels = append(metricLabels, methodKey.String(string(operation)))
 	} else {
 		name := query
@@ -102,7 +109,9 @@ func (h OpenTelemetryHook) AfterQuery(ctx context.Context, evt *pg.QueryEvent) e
 		if len(name) > 20 {
 			name = name[:20]
 		}
-		span.SetName(strings.TrimSpace(name))
+		if span.IsRecording() {
+			span.SetName(strings.TrimSpace(name))
+		}
 		metricLabels = append(metricLabels, methodKey.String(strings.TrimSpace(name)))
 	}
 
@@ -149,11 +158,13 @@ func (h OpenTelemetryHook) AfterQuery(ctx context.Context, evt *pg.QueryEvent) e
 	}
 
 	if evt.Err != nil {
-		switch evt.Err {
-		case pg.ErrNoRows, pg.ErrMultiRows:
-			span.SetStatus(codes.NotFound, "")
-		default:
-			span.RecordError(ctx, evt.Err, trace.WithErrorStatus(codes.Internal))
+		if span.IsRecording() {
+			switch evt.Err {
+			case pg.ErrNoRows, pg.ErrMultiRows:
+				span.SetStatus(codes.NotFound, "")
+			default:
+				span.RecordError(ctx, evt.Err, trace.WithErrorStatus(codes.Internal))
+			}
 		}
 		metricLabels = append(metricLabels, statusErrorLabel)
 	} else if evt.Result != nil {
@@ -165,7 +176,9 @@ func (h OpenTelemetryHook) AfterQuery(ctx context.Context, evt *pg.QueryEvent) e
 		metricLabels = append(metricLabels, statusOKLabel)
 	}
 
-	span.SetAttributes(attrs...)
+	if span.IsRecording() {
+		span.SetAttributes(attrs...)
+	}
 
 	return nil
 }
