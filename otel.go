@@ -161,9 +161,9 @@ func (h OpenTelemetryHook) AfterQuery(ctx context.Context, evt *pg.QueryEvent) e
 		if span.IsRecording() {
 			switch evt.Err {
 			case pg.ErrNoRows, pg.ErrMultiRows:
-				span.SetStatus(codes.NotFound, "")
+				span.SetStatus(codes.Error, "")
 			default:
-				span.RecordError(ctx, evt.Err, trace.WithErrorStatus(codes.Internal))
+				span.RecordError(ctx, evt.Err, trace.WithErrorStatus(codes.Error))
 			}
 		}
 		metricLabels = append(metricLabels, statusErrorLabel)

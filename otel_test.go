@@ -33,7 +33,7 @@ func BenchmarkOtel(b *testing.B) {
 	})
 	defer db.Close()
 	db.AddQueryHook(&OpenTelemetryHook{})
-	ctx, _ := global.TraceProvider().Tracer("github.com/go-pg/pgext").Start(context.Background(), "root", trace.WithNewRoot())
+	ctx, _ := global.TracerProvider().Tracer("github.com/go-pg/pgext").Start(context.Background(), "root", trace.WithNewRoot())
 
 	benchOtel(ctx, b, db)
 }
@@ -46,7 +46,7 @@ func BenchmarkOtelWithCaller(b *testing.B) {
 	})
 	defer db.Close()
 	db.AddQueryHook(&OpenTelemetryHook{Caller: true})
-	ctx, _ := global.TraceProvider().Tracer("github.com/go-pg/pgext").Start(context.Background(), "root", trace.WithNewRoot())
+	ctx, _ := global.TracerProvider().Tracer("github.com/go-pg/pgext").Start(context.Background(), "root", trace.WithNewRoot())
 
 	benchOtel(ctx, b, db)
 }
