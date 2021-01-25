@@ -8,17 +8,17 @@ import (
 
 	"github.com/go-pg/pg/v10"
 	"github.com/go-pg/pg/v10/orm"
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/metric"
-	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/label"
+	"go.opentelemetry.io/otel/metric"
+	"go.opentelemetry.io/otel/trace"
 )
 
 var (
 	instrumentationName     = "github.com/j2gg0s/pgext"
-	tracer                  = global.Tracer(instrumentationName)
-	meter                   = global.Meter(instrumentationName)
+	tracer                  = otel.Tracer(instrumentationName)
+	meter                   = otel.Meter(instrumentationName)
 	latencyValueRecorder, _ = meter.NewInt64ValueRecorder(
 		"go.sql.latency",
 		metric.WithDescription("The latency of calls in microsecond"),
@@ -163,7 +163,7 @@ func (h OpenTelemetryHook) AfterQuery(ctx context.Context, evt *pg.QueryEvent) e
 			case pg.ErrNoRows, pg.ErrMultiRows:
 				span.SetStatus(codes.Error, "")
 			default:
-				span.RecordError(ctx, evt.Err, trace.WithErrorStatus(codes.Error))
+				span.RecordError(evt.Err)
 			}
 		}
 		metricLabels = append(metricLabels, statusErrorLabel)

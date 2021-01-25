@@ -7,9 +7,9 @@ import (
 
 	"github.com/go-pg/pg/v10"
 
-	"go.opentelemetry.io/otel/api/global"
-	"go.opentelemetry.io/otel/api/trace"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/stdout"
+	"go.opentelemetry.io/otel/trace"
 )
 
 func BenchmarkOtelWithoutParent(b *testing.B) {
@@ -33,7 +33,7 @@ func BenchmarkOtel(b *testing.B) {
 	})
 	defer db.Close()
 	db.AddQueryHook(&OpenTelemetryHook{})
-	ctx, _ := global.TracerProvider().Tracer("github.com/go-pg/pgext").Start(context.Background(), "root", trace.WithNewRoot())
+	ctx, _ := otel.Tracer("github.com/go-pg/pgext").Start(context.Background(), "root", trace.WithNewRoot())
 
 	benchOtel(ctx, b, db)
 }
@@ -46,7 +46,7 @@ func BenchmarkOtelWithCaller(b *testing.B) {
 	})
 	defer db.Close()
 	db.AddQueryHook(&OpenTelemetryHook{Caller: true})
-	ctx, _ := global.TracerProvider().Tracer("github.com/go-pg/pgext").Start(context.Background(), "root", trace.WithNewRoot())
+	ctx, _ := otel.Tracer("github.com/go-pg/pgext").Start(context.Background(), "root", trace.WithNewRoot())
 
 	benchOtel(ctx, b, db)
 }
